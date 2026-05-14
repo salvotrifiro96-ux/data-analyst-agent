@@ -1,0 +1,71 @@
+{
+  "_comment": "Mapping nome campagna Meta -> HubSpot form ID per le landing page. Per le Lead Ad il form e` su Meta, qui non serve mapping. Il match avviene per substring (campaign_name.lower() contiene la chiave). Aggiungere nuove campagne landing qui sotto.",
+  "_format": {
+    "match": "substring lowercase contenuta nel nome campagna Meta",
+    "form_id": "HubSpot form GUID",
+    "form_name": "nome HubSpot (per UI/log)",
+    "is_optin": true
+  },
+  "mappings": [
+    {
+      "match": "marketing_ia_rilancio",
+      "form_id": "2a842b8e-9836-4ab1-84fd-db7e691d0c09",
+      "form_name": "LMS MBE MKTG ew Marketing IA Rilancio",
+      "is_optin": true
+    },
+    {
+      "match": "metodo_amsterdam",
+      "form_id": "9de5c1cb-1de2-4d72-9cff-97f24f1cabaa",
+      "form_name": "LMS MBE ew Vetrine Social Metodo Amsterdam",
+      "is_optin": true
+    },
+    {
+      "match": "vetrine_social",
+      "form_id": "9de5c1cb-1de2-4d72-9cff-97f24f1cabaa",
+      "form_name": "LMS MBE ew Vetrine Social Metodo Amsterdam",
+      "is_optin": true
+    },
+    {
+      "match": "simulatore_operazioni",
+      "form_id": "94dd397d-a2dc-41ff-a2ba-2b80ae6058cc",
+      "form_name": "LMS REM Real Estate Simulator",
+      "is_optin": true
+    },
+    {
+      "match": "real_estate_simulator",
+      "form_id": "94dd397d-a2dc-41ff-a2ba-2b80ae6058cc",
+      "form_name": "LMS REM Real Estate Simulator",
+      "is_optin": true
+    },
+    {
+      "match": "richiesta_info_percorso",
+      "form_id": "fb2ce8fc-a3a9-48eb-9af3-88442dfe28ec",
+      "form_name": "LMS Richiesta info REM Dolci",
+      "is_optin": true
+    },
+    {
+      "match": "meet_greet_aste",
+      "form_id": "1fded46b-3a62-4898-8753-f8e3547b7ffc",
+      "form_name": "LRES REM EW Meet&Greet Aste",
+      "is_optin": true
+    },
+    {
+      "match": "meet&greet_aste",
+      "form_id": "1fded46b-3a62-4898-8753-f8e3547b7ffc",
+      "form_name": "LRES REM EW Meet&Greet Aste",
+      "is_optin": true
+    },
+    {
+      "match": "22_nicchie_sottovalutate",
+      "form_id": "369b39d1-d5c1-4fcc-8b6b-3bf0f105e23e",
+      "form_name": "LMS Div Coach ew 22 Nicchie Sottovalutate",
+      "is_optin": true
+    },
+    {
+      "match": "nicchie_sottovalutate",
+      "form_id": "369b39d1-d5c1-4fcc-8b6b-3bf0f105e23e",
+      "form_name": "LMS Div Coach ew 22 Nicchie Sottovalutate",
+      "is_optin": true
+    }
+  ]
+}
