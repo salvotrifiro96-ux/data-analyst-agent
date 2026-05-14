@@ -32,6 +32,7 @@ from agent.meta_api import (
     MetaClient,
     MetaError,
 )
+from agent.orch_link import linked_project_id, save_to_project_button, sidebar_project_picker
 from agent.recommendations import generate_recommendations
 
 load_dotenv()
@@ -189,6 +190,7 @@ with st.sidebar:
     if st.button("🔄 Ricarica campagne (cache 5min)"):
         st.cache_data.clear()
         st.rerun()
+    sidebar_project_picker()
 
 
 # ── Step 1: campagna ─────────────────────────────────────────────────
@@ -604,6 +606,22 @@ if st.session_state.result_payload:
     if st.session_state.result_reco:
         st.markdown("## 🧠 Raccomandazioni AI")
         st.markdown(st.session_state.result_reco)
+
+    # Cross-app: salva analisi nel progetto orchestrator collegato
+    if linked_project_id():
+        save_to_project_button(
+            agent_slug="analyst",
+            output={
+                **st.session_state.result_payload,
+                "ai_reco": st.session_state.result_reco or "",
+            },
+            user_input={
+                "campaign_id": st.session_state.result_payload.get("campaign_id"),
+                "campaign_name": st.session_state.result_payload.get("campagna"),
+            },
+            label="🎯 Approva analisi per progetto",
+            key_suffix="analyst",
+        )
 
     with st.expander("🔍 Payload completo (JSON)"):
         st.json(st.session_state.result_payload)
