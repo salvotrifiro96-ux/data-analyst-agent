@@ -34,6 +34,7 @@ from agent.meta_api import (
 )
 from agent.orch_link import linked_project_id, save_to_project_button, sidebar_project_picker
 from agent.recommendations import generate_recommendations
+from agent.store import AnalysisRow, AnalysisStore
 
 load_dotenv()
 
@@ -104,10 +105,87 @@ DEFAULT_STATE: dict[str, Any] = {
     ],
     "result_payload": None,      # dict ultimo run
     "result_reco": "",           # raccomandazioni AI ultimo run
+    "loaded_analysis_id": None,  # id archivio caricato (per badge UI)
+    "_archive_action": None,     # dict {kind: 'load'|'delete', id: ...}
 }
 for k, v in DEFAULT_STATE.items():
     if k not in st.session_state:
         st.session_state[k] = v
+
+
+# ── Archivio ─────────────────────────────────────────────────────────
+def _store() -> AnalysisStore | None:
+    if "_analysis_store" not in st.session_state:
+        try:
+            st.session_state._analysis_store = AnalysisStore.from_env()
+        except Exception:
+            st.session_state._analysis_store = None
+    return st.session_state._analysis_store
+
+
+def _format_archive_ts(iso_string: str) -> str:
+    try:
+        return datetime.fromisoformat(iso_string.replace("Z", "+00:00")).strftime("%d/%m %H:%M")
+    except Exception:
+        return iso_string[:16]
+
+
+def _render_archive_sidebar() -> None:
+    store = _store()
+    st.sidebar.divider()
+    st.sidebar.header("📚 Archivio analisi")
+    if store is None:
+        st.sidebar.caption(
+            "Archivio disabilitato: mancano `SUPABASE_URL` e `SUPABASE_SECRET_KEY`."
+        )
+        return
+    try:
+        rows = store.list_recent(limit=30)
+    except Exception as e:
+        st.sidebar.error(f"Errore archivio: {e}")
+        return
+    if not rows:
+        st.sidebar.caption("_Nessuna analisi salvata ancora._")
+        return
+    if (loaded := st.session_state.get("loaded_analysis_id")):
+        st.sidebar.caption(f"📌 Visualizzo `{loaded[:8]}…`")
+    for row in rows:
+        with st.sidebar.expander(f"{_format_archive_ts(row.created_at)} — {row.title[:60]}"):
+            st.caption(f"id: `{row.id[:8]}…`")
+            c1, c2 = st.columns(2)
+            if c1.button("📥 Apri", key=f"open_{row.id}", use_container_width=True):
+                st.session_state._archive_action = {"kind": "load", "id": row.id}
+                st.rerun()
+            if c2.button("🗑", key=f"del_{row.id}", use_container_width=True):
+                st.session_state._archive_action = {"kind": "delete", "id": row.id}
+                st.rerun()
+
+
+def _apply_archive_action() -> None:
+    action = st.session_state.pop("_archive_action", None)
+    if not action:
+        return
+    store = _store()
+    if store is None:
+        return
+    try:
+        if action["kind"] == "load":
+            row = store.get(action["id"])
+            if row is None:
+                st.warning("Analisi non trovata in archivio.")
+                return
+            payload = dict(row.payload)
+            st.session_state.result_reco = payload.pop("ai_reco", "") or ""
+            st.session_state.result_payload = payload
+            st.session_state.loaded_analysis_id = row.id
+        elif action["kind"] == "delete":
+            store.delete(action["id"])
+            if st.session_state.get("loaded_analysis_id") == action["id"]:
+                st.session_state.loaded_analysis_id = None
+                st.session_state.result_payload = None
+                st.session_state.result_reco = ""
+    except Exception as e:
+        st.warning(f"Archivio: {e}")
 
 
 # ── Loaders ──────────────────────────────────────────────────────────
@@ -191,6 +269,9 @@ with st.sidebar:
         st.cache_data.clear()
         st.rerun()
     sidebar_project_picker()
+
+_render_archive_sidebar()
+_apply_archive_action()
 
 
 # ── Step 1: campagna ─────────────────────────────────────────────────
@@ -589,6 +670,25 @@ if run:
                         st.session_state.result_reco = reco
                 else:
                     st.session_state.result_reco = ""
+
+                # Auto-save in archivio (non blocca se Supabase down)
+                store = _store()
+                if store is not None:
+                    try:
+                        saved = store.save_analysis(
+                            payload=payload,
+                            ai_reco=st.session_state.result_reco,
+                            inputs={
+                                "campaign_key": st.session_state.selected_camp_key,
+                                "period_choice": st.session_state.period_choice,
+                                "since": since,
+                                "until": until,
+                                "blocks": selected_blocks,
+                            },
+                        )
+                        st.session_state.loaded_analysis_id = saved.id
+                    except Exception as e:
+                        st.warning(f"⚠️ Analisi fatta ma archivio non aggiornato: {e}")
             except Exception as e:
                 st.error(f"Errore durante l'analisi: {e}")
                 with st.expander("Traceback"):
